@@ -1,74 +1,65 @@
-"use client";
+'use client'
 
-import React from "react";
-import { useTaskStore } from "@/lib/store";
-import { Input } from "@/components/ui/input";
+import { Search, X } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
+} from '@/components/ui/select'
+import { useStore } from '@/lib/store'
+import type { Priority } from '@/lib/types'
 
 export function FilterBar() {
-  const { state, dispatch } = useTaskStore();
-  const { filter, members } = state;
+  const { members, filters, setFilter, resetFilters } = useStore()
 
-  const hasFilter =
-    filter.search !== "" || filter.priority !== "all" || filter.assigneeId !== "all";
-
-  function reset() {
-    dispatch({ type: "SET_FILTER", filter: { search: "", priority: "all", assigneeId: "all" } });
-  }
+  const hasActiveFilters =
+    filters.search !== '' || filters.priority !== 'all' || filters.assigneeId !== 'all'
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+    <div className="flex flex-wrap items-center gap-2 px-6 py-3 border-b bg-white">
+      {/* Search */}
+      <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
-          className="h-9 w-52 pl-8 text-sm"
-          placeholder="일감 검색..."
-          value={filter.search}
-          onChange={(e) =>
-            dispatch({ type: "SET_FILTER", filter: { search: e.target.value } })
-          }
+          value={filters.search}
+          onChange={(e) => setFilter('search', e.target.value)}
+          placeholder="제목으로 검색..."
+          className="pl-9 h-9"
         />
       </div>
 
+      {/* Priority filter */}
       <Select
-        value={filter.priority}
-        onValueChange={(v) =>
-          dispatch({
-            type: "SET_FILTER",
-            filter: { priority: v as typeof filter.priority },
-          })
-        }
+        value={filters.priority}
+        onValueChange={(v) => setFilter('priority', v as Priority | 'all')}
       >
-        <SelectTrigger className="h-9 w-32 text-sm">
+        <SelectTrigger className="h-9 w-[130px]">
           <SelectValue placeholder="우선순위" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">모든 우선순위</SelectItem>
+          <SelectItem value="urgent">긴급</SelectItem>
           <SelectItem value="high">높음</SelectItem>
           <SelectItem value="medium">보통</SelectItem>
           <SelectItem value="low">낮음</SelectItem>
         </SelectContent>
       </Select>
 
+      {/* Assignee filter */}
       <Select
-        value={filter.assigneeId}
-        onValueChange={(v) =>
-          dispatch({ type: "SET_FILTER", filter: { assigneeId: v } })
-        }
+        value={filters.assigneeId}
+        onValueChange={(v) => setFilter('assigneeId', v)}
       >
-        <SelectTrigger className="h-9 w-36 text-sm">
+        <SelectTrigger className="h-9 w-[130px]">
           <SelectValue placeholder="담당자" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">모든 담당자</SelectItem>
+          <SelectItem value="unassigned">미배정</SelectItem>
           {members.map((m) => (
             <SelectItem key={m.id} value={m.id}>
               {m.name}
@@ -77,12 +68,13 @@ export function FilterBar() {
         </SelectContent>
       </Select>
 
-      {hasFilter && (
-        <Button variant="ghost" size="sm" className="h-9 px-2 text-muted-foreground" onClick={reset}>
-          <X className="mr-1 h-3.5 w-3.5" />
+      {/* Reset button */}
+      {hasActiveFilters && (
+        <Button variant="ghost" size="sm" onClick={resetFilters} className="h-9 text-muted-foreground">
+          <X className="h-4 w-4 mr-1" />
           초기화
         </Button>
       )}
     </div>
-  );
+  )
 }

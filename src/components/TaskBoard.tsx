@@ -1,87 +1,161 @@
-"use client";
+'use client'
 
-import React, { useState } from "react";
-import { Status } from "@/lib/types";
-import { useFilteredTasks, useTaskStore } from "@/lib/store";
-import { TaskCard } from "./TaskCard";
-import { TaskDialog } from "./TaskDialog";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from 'react'
+import { Plus, Users, LayoutGrid } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useStore } from '@/lib/store'
+import type { Status, Task } from '@/lib/types'
+import { STATUS_CONFIG, cn } from '@/lib/utils'
+import { TaskCard } from './TaskCard'
+import { TaskDialog } from './TaskDialog'
+import { MemberDialog } from './MemberDialog'
+import { FilterBar } from './FilterBar'
 
-const columns: { status: Status; label: string; color: string; dotColor: string }[] = [
-  { status: "todo", label: "할 일", color: "bg-slate-50 border-slate-200", dotColor: "bg-slate-400" },
-  {
-    status: "in-progress",
-    label: "진행 중",
-    color: "bg-blue-50 border-blue-200",
-    dotColor: "bg-blue-500",
-  },
-  {
-    status: "done",
-    label: "완료",
-    color: "bg-green-50 border-green-200",
-    dotColor: "bg-green-500",
-  },
-];
+const COLUMNS: { status: Status }[] = [
+  { status: 'todo' },
+  { status: 'in_progress' },
+  { status: 'review' },
+  { status: 'done' },
+]
 
-function Column({ status, label, color, dotColor }: (typeof columns)[number]) {
-  const tasks = useFilteredTasks(status);
-  const { state } = useTaskStore();
-  const totalCount = state.tasks.filter((t) => t.status === status).length;
-  const [addOpen, setAddOpen] = useState(false);
+export function TaskBoard() {
+  const { tasks, filters } = useStore()
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false)
+  const [memberDialogOpen, setMemberDialogOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [defaultStatus, setDefaultStatus] = useState<Status>('todo')
+
+  const filteredTasks = tasks.filter((task) => {
+    if (
+      filters.search &&
+      !task.title.toLowerCase().includes(filters.search.toLowerCase()) &&
+      !task.description.toLowerCase().includes(filters.search.toLowerCase())
+    ) {
+      return false
+    }
+    if (filters.priority !== 'all' && task.priority !== filters.priority) return false
+    if (filters.assigneeId !== 'all') {
+      if (filters.assigneeId === 'unassigned' && task.assigneeId !== null) return false
+      if (filters.assigneeId !== 'unassigned' && task.assigneeId !== filters.assigneeId) return false
+    }
+    return true
+  })
+
+  const openAddTask = (status: Status) => {
+    setEditingTask(null)
+    setDefaultStatus(status)
+    setTaskDialogOpen(true)
+  }
+
+  const totalActive = tasks.filter((t) => t.status !== 'done').length
+  const totalDone = tasks.filter((t) => t.status === 'done').length
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
-      <div className={cn("rounded-t-lg border px-3 py-2.5", color)}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className={cn("h-2 w-2 rounded-full", dotColor)} />
-            <span className="text-sm font-semibold">{label}</span>
-            <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-xs font-medium text-muted-foreground shadow-sm">
-              {totalCount}
-            </span>
+    <div className="flex flex-col h-screen bg-background">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b bg-white shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10">
+            <LayoutGrid className="h-5 w-5 text-primary" />
           </div>
+          <div>
+            <h1 className="text-lg font-bold leading-tight">Team Tasks</h1>
+            <p className="text-xs text-muted-foreground">
+              진행 중 {totalActive}개 · 완료 {totalDone}개
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => setAddOpen(true)}
-            title="일감 추가"
+            variant="outline"
+            size="sm"
+            onClick={() => setMemberDialogOpen(true)}
+            className="hidden sm:flex"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Users className="h-4 w-4" />
+            팀원 관리
           </Button>
+          <Button size="sm" onClick={() => openAddTask('todo')}>
+            <Plus className="h-4 w-4" />
+            새 일감
+          </Button>
+        </div>
+      </header>
+
+      {/* Filter bar */}
+      <FilterBar />
+
+      {/* Kanban board */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="flex gap-4 h-full p-4 min-w-max">
+          {COLUMNS.map(({ status }) => {
+            const cfg = STATUS_CONFIG[status]
+            const columnTasks = filteredTasks.filter((t) => t.status === status)
+
+            return (
+              <div
+                key={status}
+                className="flex flex-col w-[288px] shrink-0 rounded-xl bg-muted/40 border"
+              >
+                {/* Column header */}
+                <div
+                  className={cn(
+                    'flex items-center justify-between px-4 py-3 rounded-t-xl border-b',
+                    cfg.headerBg
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={cn('h-2 w-2 rounded-full', cfg.dot)} />
+                    <span className={cn('text-sm font-semibold', cfg.headerText)}>
+                      {cfg.label}
+                    </span>
+                    <span
+                      className={cn(
+                        'text-xs font-medium px-1.5 py-0.5 rounded-full bg-white/70',
+                        cfg.headerText
+                      )}
+                    >
+                      {columnTasks.length}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => openAddTask(status)}
+                    className={cn('hover:bg-white/50', cfg.headerText)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Task list */}
+                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  {columnTasks.length === 0 ? (
+                    <div
+                      className="flex items-center justify-center h-16 rounded-lg border-2 border-dashed border-muted-foreground/20 cursor-pointer hover:border-muted-foreground/40 transition-colors"
+                      onClick={() => openAddTask(status)}
+                    >
+                      <span className="text-xs text-muted-foreground">+ 일감 추가</span>
+                    </div>
+                  ) : (
+                    columnTasks.map((task) => <TaskCard key={task.id} task={task} />)
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
-      <div
-        className={cn(
-          "flex-1 overflow-y-auto rounded-b-lg border border-t-0 p-2 space-y-2",
-          color,
-          "min-h-[400px] max-h-[calc(100vh-220px)]"
-        )}
-      >
-        {tasks.length === 0 && (
-          <div className="flex h-24 items-center justify-center">
-            <p className="text-xs text-muted-foreground">일감이 없습니다</p>
-          </div>
-        )}
-        {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} />
-        ))}
-      </div>
-
-      <TaskDialog open={addOpen} onOpenChange={setAddOpen} defaultStatus={status} />
+      {/* Dialogs */}
+      <TaskDialog
+        open={taskDialogOpen}
+        onClose={() => setTaskDialogOpen(false)}
+        task={editingTask}
+        defaultStatus={defaultStatus}
+      />
+      <MemberDialog open={memberDialogOpen} onClose={() => setMemberDialogOpen(false)} />
     </div>
-  );
-}
-
-export function TaskBoard() {
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      {columns.map((col) => (
-        <Column key={col.status} {...col} />
-      ))}
-    </div>
-  );
+  )
 }

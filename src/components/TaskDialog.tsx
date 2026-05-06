@@ -1,166 +1,142 @@
-"use client";
+'use client'
 
-import React, { useEffect, useState } from "react";
-import { Task, Priority, Status } from "@/lib/types";
-import { useTaskStore, generateId } from "@/lib/store";
+import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select'
+import { useStore } from '@/lib/store'
+import type { Priority, Status, Task } from '@/lib/types'
 
 interface TaskDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  task?: Task | null;
-  defaultStatus?: Status;
+  open: boolean
+  onClose: () => void
+  task?: Task | null
+  defaultStatus?: Status
 }
 
-const emptyForm = {
-  title: "",
-  description: "",
-  status: "todo" as Status,
-  priority: "medium" as Priority,
-  assigneeId: "",
-  dueDate: "",
-  tags: "",
-};
+export function TaskDialog({ open, onClose, task, defaultStatus = 'todo' }: TaskDialogProps) {
+  const { members, addTask, updateTask } = useStore()
 
-export function TaskDialog({ open, onOpenChange, task, defaultStatus }: TaskDialogProps) {
-  const { state, dispatch } = useTaskStore();
-  const [form, setForm] = useState({ ...emptyForm });
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [status, setStatus] = useState<Status>(defaultStatus)
+  const [priority, setPriority] = useState<Priority>('medium')
+  const [assigneeId, setAssigneeId] = useState('unassigned')
+  const [dueDate, setDueDate] = useState('')
 
   useEffect(() => {
-    if (task) {
-      setForm({
-        title: task.title,
-        description: task.description ?? "",
-        status: task.status,
-        priority: task.priority,
-        assigneeId: task.assigneeId ?? "",
-        dueDate: task.dueDate ?? "",
-        tags: task.tags?.join(", ") ?? "",
-      });
-    } else {
-      setForm({ ...emptyForm, status: defaultStatus ?? "todo" });
+    if (open) {
+      if (task) {
+        setTitle(task.title)
+        setDescription(task.description)
+        setStatus(task.status)
+        setPriority(task.priority)
+        setAssigneeId(task.assigneeId ?? 'unassigned')
+        setDueDate(task.dueDate ?? '')
+      } else {
+        setTitle('')
+        setDescription('')
+        setStatus(defaultStatus)
+        setPriority('medium')
+        setAssigneeId('unassigned')
+        setDueDate('')
+      }
     }
-  }, [task, defaultStatus, open]);
+  }, [open, task, defaultStatus])
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.title.trim()) return;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return
 
-    const tags = form.tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
+    const data = {
+      title: title.trim(),
+      description: description.trim(),
+      status,
+      priority,
+      assigneeId: assigneeId === 'unassigned' ? null : assigneeId,
+      dueDate: dueDate || null,
+    }
 
     if (task) {
-      dispatch({
-        type: "UPDATE_TASK",
-        task: {
-          ...task,
-          title: form.title,
-          description: form.description || undefined,
-          status: form.status,
-          priority: form.priority,
-          assigneeId: form.assigneeId || undefined,
-          dueDate: form.dueDate || undefined,
-          tags: tags.length ? tags : undefined,
-        },
-      });
+      updateTask(task.id, data)
     } else {
-      dispatch({
-        type: "ADD_TASK",
-        task: {
-          id: generateId(),
-          title: form.title,
-          description: form.description || undefined,
-          status: form.status,
-          priority: form.priority,
-          assigneeId: form.assigneeId || undefined,
-          dueDate: form.dueDate || undefined,
-          tags: tags.length ? tags : undefined,
-          createdAt: new Date().toISOString(),
-        },
-      });
+      addTask(data)
     }
-    onOpenChange(false);
+    onClose()
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{task ? "일감 수정" : "새 일감 추가"}</DialogTitle>
+          <DialogTitle>{task ? '일감 수정' : '새 일감 추가'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="title">제목 *</Label>
+            <Label htmlFor="task-title">제목 *</Label>
             <Input
-              id="title"
+              id="task-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="일감 제목을 입력하세요"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              required
               autoFocus
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="description">설명</Label>
+            <Label htmlFor="task-desc">설명</Label>
             <Textarea
-              id="description"
-              placeholder="상세 내용을 입력하세요"
+              id="task-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="상세 내용을 입력하세요 (선택)"
               rows={3}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>상태</Label>
-              <Select
-                value={form.status}
-                onValueChange={(v) => setForm({ ...form, status: v as Status })}
-              >
+              <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todo">할 일</SelectItem>
-                  <SelectItem value="in-progress">진행 중</SelectItem>
-                  <SelectItem value="done">완료</SelectItem>
+                  <SelectItem value="todo">Todo</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="review">Review</SelectItem>
+                  <SelectItem value="done">Done</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label>우선순위</Label>
-              <Select
-                value={form.priority}
-                onValueChange={(v) => setForm({ ...form, priority: v as Priority })}
-              >
+              <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="high">높음</SelectItem>
-                  <SelectItem value="medium">보통</SelectItem>
                   <SelectItem value="low">낮음</SelectItem>
+                  <SelectItem value="medium">보통</SelectItem>
+                  <SelectItem value="high">높음</SelectItem>
+                  <SelectItem value="urgent">긴급</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -169,16 +145,13 @@ export function TaskDialog({ open, onOpenChange, task, defaultStatus }: TaskDial
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>담당자</Label>
-              <Select
-                value={form.assigneeId}
-                onValueChange={(v) => setForm({ ...form, assigneeId: v === "__none__" ? "" : v })}
-              >
+              <Select value={assigneeId} onValueChange={setAssigneeId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="담당자 선택" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">없음</SelectItem>
-                  {state.members.map((m) => (
+                  <SelectItem value="unassigned">담당자 없음</SelectItem>
+                  {members.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.name}
                     </SelectItem>
@@ -188,36 +161,24 @@ export function TaskDialog({ open, onOpenChange, task, defaultStatus }: TaskDial
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="dueDate">마감일</Label>
+              <Label htmlFor="task-due">마감일</Label>
               <Input
-                id="dueDate"
+                id="task-due"
                 type="date"
-                value={form.dueDate}
-                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
               />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="tags">태그 (쉼표로 구분)</Label>
-            <Input
-              id="tags"
-              placeholder="예: 디자인, 개발, 테스트"
-              value={form.tags}
-              onChange={(e) => setForm({ ...form, tags: e.target.value })}
-            />
-          </div>
-
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={onClose}>
               취소
             </Button>
-            <Button type="submit" disabled={!form.title.trim()}>
-              {task ? "저장" : "추가"}
-            </Button>
+            <Button type="submit">{task ? '수정 완료' : '추가'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
