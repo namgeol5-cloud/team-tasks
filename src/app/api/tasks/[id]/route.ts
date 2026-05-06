@@ -7,6 +7,10 @@ type Params = { params: Promise<{ id: string }> }
 export async function GET(_request: Request, { params }: Params) {
   const { id } = await params
   const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
@@ -20,6 +24,10 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PATCH(request: Request, { params }: Params) {
   const { id } = await params
   const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const body = await request.json()
 
   const updates: TablesUpdate<'tasks'> = {}
@@ -45,6 +53,10 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_request: Request, { params }: Params) {
   const { id } = await params
   const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { error } = await supabase.from('tasks').delete().eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
