@@ -1,9 +1,39 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git init *)",
       "Bash(git add *)",
-      "PowerShell(winget install *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Skill(claude-hud:setup)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\team-tasks\\\\src\" -Recurse -File)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Remove-Item *)",
+      "Bash(npm run *)",
+      "mcp__plugin_supabase_supabase__list_projects",
+      "mcp__plugin_supabase_supabase__get_project_url",
+      "mcp__plugin_supabase_supabase__get_publishable_keys",
+      "mcp__plugin_supabase_supabase__apply_migration",
+      "mcp__plugin_supabase_supabase__generate_typescript_types",
+      "Bash(npm install *)",
+      "Bash(Get-Process -Name \"node\")",
+      "Bash(Stop-Process -Force)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "Bash(npx tsc *)",
+      "mcp__plugin_supabase_supabase__list_tables",
+      "mcp__plugin_supabase_supabase__execute_sql",
+      "Bash(git commit *)",
+      "Bash(vercel *)",
+      "Bash(npm i *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\team-tasks\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(taskkill /F /IM node.exe)",
+      "PowerShell(Stop-Process *)",
+      "Skill(git-commit)",
+      "Bash(Get-ChildItem -Recurse \".claude/commands\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Recurse \"src/app/api/comments\")",
+      "Bash(Get-ChildItem -Recurse \"src/app/comments\")"
     ]
   }
 }
