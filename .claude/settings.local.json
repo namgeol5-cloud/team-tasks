@@ -33,7 +33,20 @@
       "Bash(Get-ChildItem -Recurse \".claude/commands\")",
       "Bash(Select-Object FullName)",
       "Bash(Get-ChildItem -Recurse \"src/app/api/comments\")",
-      "Bash(Get-ChildItem -Recurse \"src/app/comments\")"
+      "Bash(Get-ChildItem -Recurse \"src/app/comments\")",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(npm audit *)",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\);Object.values\\(d.vulnerabilities\\).forEach\\(v=>console.log\\(v.severity.toUpperCase\\(\\),'|',v.name,'|',v.via.map\\(x=>typeof x==='string'?x:x.title\\).join\\(', '\\)\\)\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")",
+      "Bash(node --env-file=.env.local -e 'import\\('\\\\''@supabase/supabase-js'\\\\''\\).then\\(async \\({createClient}\\) => { *)",
+      "Bash(npm test *)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(npx playwright *)",
+      "PowerShell(ls \"$env:LOCALAPPDATA\\\\ms-playwright\" 2>&1 | Select-Object -First 20)",
+      "Bash(node -e ' *)",
+      "Bash(git rm *)"
     ]
   }
 }
