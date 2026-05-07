@@ -4,16 +4,21 @@ import { createMiddlewareClient } from '@/lib/supabase/middleware'
 export async function middleware(request: NextRequest) {
   const { supabase, response } = createMiddlewareClient(request)
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (error || !user) {
+    // 만료·무효 refresh token 등 인증 오류 시 세션 쿠키를 지우고 로그인으로 이동
     const loginUrl = new URL('/login', request.url)
-    return NextResponse.redirect(loginUrl)
+    const redirectResponse = NextResponse.redirect(loginUrl)
+    request.cookies.getAll().forEach(({ name }) => {
+      if (name.startsWith('sb-')) redirectResponse.cookies.delete(name)
+    })
+    return redirectResponse
   }
 
   return response
 }
 
 export const config = {
-  matcher: ['/', '/api/tasks/:path*'],
+  matcher: ['/', '/comments', '/api/tasks/:path*', '/api/comments/:path*'],
 }
