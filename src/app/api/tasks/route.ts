@@ -1,5 +1,7 @@
+// 인증 실패 응답: 단위 테스트(핸들러 직접)→ 401, 통합(proxy.ts 경유)→ 307 redirect /login
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { buildTaskRecord } from './build-record'
 
 export async function GET() {
   const supabase = await createClient()
@@ -22,19 +24,16 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { title, assignee_id } = await request.json()
+  const body = await request.json()
+  const result = buildTaskRecord(body, user)
 
-  if (!title?.trim()) {
-    return NextResponse.json({ error: 'title is required' }, { status: 400 })
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 400 })
   }
 
   const { data, error } = await supabase
     .from('tasks')
-    .insert({
-      title: title.trim(),
-      created_by: user.id,
-      assignee_id: assignee_id ?? user.id,
-    })
+    .insert(result.record)
     .select()
     .single()
 
